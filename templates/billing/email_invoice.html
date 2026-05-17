@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Tax Invoice #{{ invoice.id }}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8fafc; color: #334155;">
+    <div style="max-width: 600px; margin: 0 auto; background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        <!-- Header -->
+        <div style="padding: 30px; background-color: #0f172a; color: white; text-align: center;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Zenelait Infotech</h1>
+            <p style="margin: 5px 0 0; font-size: 14px; opacity: 0.8;">Your Tax Invoice Summary</p>
+        </div>
+        
+        <!-- Body -->
+        <div style="padding: 30px;">
+            <p style="margin-top: 0; font-size: 16px;">Dear <strong>{{ invoice.customer.name }}</strong>,</p>
+            <p style="font-size: 15px; line-height: 1.5; color: #475569;">Thank you for shopping at Zenelait Infotech. Your transaction has been processed successfully. Please find a summary of your tax invoice details below.</p>
+            
+            <!-- Metadata Box -->
+            <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 16px; margin: 25px 0;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px;">
+                    <tr>
+                        <td style="color: #64748b; text-transform: uppercase; font-size: 11px; font-weight: bold; padding-bottom: 4px;">Invoice ID</td>
+                        <td style="color: #64748b; text-transform: uppercase; font-size: 11px; font-weight: bold; text-align: right; padding-bottom: 4px;">Date</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold; color: #0f172a; font-size: 15px;">#INV-{{ invoice.id }}</td>
+                        <td style="font-weight: bold; color: #0f172a; font-size: 15px; text-align: right;">{{ invoice.date|date:"d-M-Y, h:i A" }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Itemized Table -->
+            <h3 style="margin: 25px 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Items Purchased</h3>
+            <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; border-collapse: collapse;">
+                <thead>
+                    <tr style="color: #64748b; text-align: left; font-size: 12px; border-bottom: 1px solid #f1f5f9;">
+                        <th style="padding: 8px 0; text-align: left;">Item Description</th>
+                        <th style="padding: 8px 0; text-align: center;">Qty</th>
+                        <th style="padding: 8px 0; text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr style="border-bottom: 1px solid #f8fafc;">
+                        <td style="padding: 12px 0;">
+                            <div style="font-weight: bold; color: #1e293b;">{{ item.product.name }}</div>
+                            <div style="font-size: 11px; color: #94a3b8;">HSN: {{ item.hsn_code|default:"--" }} &middot; GST: {{ item.gst_rate }}%</div>
+                        </td>
+                        <td style="padding: 12px 0; text-align: center; color: #475569; font-weight: 500;">{{ item.quantity }}</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #0f172a;">₹{{ item.total_price }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Calculations Table -->
+            <div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed #e2e8f0;">
+                <table style="margin-left: auto; font-size: 14px;" cellpadding="5">
+                    <tr>
+                        <td style="color: #64748b; text-align: right;">Subtotal (Excl. Tax):</td>
+                        <td style="font-weight: 600; text-align: right; width: 100px;">₹{{ subtotal }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b; text-align: right;">CGST (Central):</td>
+                        <td style="font-weight: 600; text-align: right;">₹{{ invoice.cgst_amount }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b; text-align: right;">SGST (State):</td>
+                        <td style="font-weight: 600; text-align: right;">₹{{ invoice.sgst_amount }}</td>
+                    </tr>
+                    {% if invoice.discount_amount > 0 %}
+                    <tr>
+                        <td style="color: #ef4444; text-align: right; font-weight: bold;">Discount ({{ invoice.applied_offer_name }}):</td>
+                        <td style="font-weight: 600; text-align: right; color: #ef4444;">-₹{{ invoice.discount_amount }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td style="font-size: 16px; font-weight: 800; color: #0f172a; text-align: right; padding-top: 10px;">Grand Total:</td>
+                        <td style="font-size: 16px; font-weight: 800; color: #ef4444; text-align: right; padding-top: 10px;">₹{{ invoice.total_amount }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Action Button -->
+            <div style="text-align: center; margin: 40px 0 20px;">
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">To view details, print, or download a PDF original invoice:</p>
+                <a href="{{ domain }}{% url 'view_invoice' invoice.id %}" style="display: inline-block; padding: 12px 28px; background: linear-gradient(to right, #ef4444, #f97316); background-color: #ef4444; color: white; font-weight: bold; text-decoration: none; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);">View Online Invoice</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 20px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.6;">
+            <p style="margin: 0;"><strong>Zenelait Infotech.</strong> &middot; GSTIN: 33AABCU9603R1ZX</p>
+            <p style="margin: 2px 0 0;">123 Business Avenue, Tech Park, Bangalore, India</p>
+            <p style="margin: 10px 0 0; font-style: italic;">This is an automatically generated email billing notification. Please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

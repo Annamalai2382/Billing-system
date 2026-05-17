@@ -1,0 +1,174 @@
+/* Custom Colors & Utilities */
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: #f3f4f6;
+    --neon-green: #dc2626; /* Rich Darker Red */
+    --neon-orange: #f97316;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f9fafb;
+}
+::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* Glassmorphism Classes (Refined Light Mode) */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px -10px rgba(220, 38, 38, 0.1);
+    border-color: rgba(220, 38, 38, 0.2);
+}
+
+.glass-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+}
+
+.glass-btn:hover {
+    background: #dc2626;
+    box-shadow: 0 6px 8px -1px rgba(239, 68, 68, 0.3);
+}
+
+/* Sidebar Active State */
+.nav-item {
+    color: #4b5563;
+    transition: all 0.2s;
+}
+.nav-item:hover:not(.active) {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+.nav-item.active {
+    background: #fef2f2;
+    border-left: 4px solid #dc2626;
+    color: #dc2626 !important;
+    font-weight: 600;
+}
+
+/* Animations */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+}
+
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+    animation: spin 3s linear infinite;
+}
+
+/* Toasts */
+.toast {
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* Mesh Background Animations */
+@keyframes blob {
+    0% {
+        transform: translate(0px, 0px) scale(1) rotate(0deg);
+    }
+    33% {
+        transform: translate(50px, -80px) scale(1.1) rotate(120deg);
+    }
+    66% {
+        transform: translate(-30px, 30px) scale(0.9) rotate(240deg);
+    }
+    100% {
+        transform: translate(0px, 0px) scale(1) rotate(360deg);
+    }
+}
+
+.animate-blob {
+    animation: blob 20s infinite alternate ease-in-out;
+}
+
+.animation-delay-2000 {
+    animation-delay: 4s;
+}
+
+.animation-delay-4000 {
+    animation-delay: 8s;
+}
+
+/* Waving Hand Animation */
+@keyframes wave {
+    0% { transform: rotate(0.0deg) }
+    10% { transform: rotate(14.0deg) }
+    20% { transform: rotate(-8.0deg) }
+    30% { transform: rotate(14.0deg) }
+    40% { transform: rotate(-4.0deg) }
+    50% { transform: rotate(10.0deg) }
+    60% { transform: rotate(0.0deg) }
+    100% { transform: rotate(0.0deg) }
+}
+
+.animate-wave {
+    animation-name: wave;
+    animation-duration: 2.5s;
+    animation-iteration-count: infinite;
+}/* Highlight row animation for POS */
+@keyframes highlightPulse {
+    0% { 
+        background-color: rgba(239, 68, 68, 0.15); 
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.4);
+    }
+    100% { 
+        background-color: #f8fafc; /* slate-50 */
+        box-shadow: none;
+        border-color: #f1f5f9; /* slate-100 */
+    }
+}
+.animate-highlight-row {
+    animation: highlightPulse 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

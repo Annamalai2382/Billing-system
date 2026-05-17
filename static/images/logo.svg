@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" width="100%" height="100%">
+    <defs>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;display=swap');
+            .logo-text {
+                font-family: 'Playfair Display', 'Georgia', serif;
+                font-size: 46px;
+                letter-spacing: 6px;
+                font-weight: 400;
+            }
+            .logo-black { fill: #1a1a1a; }
+            .logo-red { fill: #ff0000; }
+            .logo-sub {
+                font-family: 'Playfair Display', 'Georgia', serif;
+                font-size: 10px;
+                font-weight: 700;
+                fill: #ff0000;
+                letter-spacing: 5px;
+                text-transform: uppercase;
+            }
+            .line-mid {
+                stroke: #999999;
+                stroke-width: 0.5;
+            }
+            .line-under {
+                stroke: #1a1a1a;
+                stroke-width: 0.75;
+            }
+        </style>
+    </defs>
+    <!-- Main Text centered -->
+    <text x="200" y="75" text-anchor="middle" class="logo-text">
+        <tspan class="logo-black">ZEN</tspan><tspan class="logo-red">EL</tspan><tspan class="logo-black">AIT</tspan>
+    </text>
+    
+    <!-- Middle line through letters -->
+    <line x1="60" y1="61" x2="340" y2="61" class="line-mid" />
+    
+    <!-- Underline under EL (centered) -->
+    <line x1="170" y1="87" x2="230" y2="87" class="line-under" />
+    
+    <!-- Sub text -->
+    <text x="200" y="100" text-anchor="middle" class="logo-sub">INFO TECH</text>
+</svg>

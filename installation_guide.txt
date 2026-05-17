@@ -1,0 +1,147 @@
+========================================================================
+            ZENELAIT INFOTECH RETAIL BILLING SYSTEM
+                   INSTALLATION & SETUP GUIDE
+========================================================================
+
+Welcome to the Zenelait Infotech Retail Billing System. This guide provides 
+complete, step-by-step instructions to configure, run, and manage the 
+billing application on your local developer workstation.
+
+------------------------------------------------------------------------
+1. PREREQUISITES
+------------------------------------------------------------------------
+Before beginning, ensure your system has the following software installed:
+  * Python (Version 3.8 or higher is recommended)
+  * Pip (Python package manager, usually bundled with Python)
+  * Git (Optional, for version control)
+  * MySQL Server (Optional - if missing, the system will automatically 
+    fail back to a local SQLite database file `db.sqlite3` for zero-downtime)
+
+------------------------------------------------------------------------
+2. DIRECTORY STRUCTURE
+------------------------------------------------------------------------
+Make sure you are in the root directory of the application:
+  Path: `c:\Users\annam\OneDrive\Desktop\Billing system\`
+
+------------------------------------------------------------------------
+3. STEP-BY-STEP SETUP INSTRUCTIONS
+------------------------------------------------------------------------
+
+STEP 3.1: Create a Python Virtual Environment
+Creating a virtual environment ensures that the application's dependencies 
+do not conflict with other Python projects on your system.
+Open PowerShell or Command Prompt in the workspace directory and execute:
+  python -m venv venv
+
+STEP 3.2: Activate the Virtual Environment
+Activate the environment to isolate terminal commands:
+  * On Windows PowerShell:
+    .\venv\Scripts\Activate.ps1
+  * On Windows Command Prompt (cmd):
+    .\venv\Scripts\activate.bat
+  * On macOS / Linux:
+    source venv/bin/activate
+
+STEP 3.3: Upgrade Package Manager (pip)
+Ensure you are using the latest pip package:
+  python -m pip install --upgrade pip
+
+STEP 3.4: Install System & Application Dependencies
+Install the required packages listed in the requirements file (such as Django, 
+Pillow for product images, MySQL client connectors, and cryptography for secure hashing):
+  pip install -r requirements.txt
+
+STEP 3.5: Database Configuration
+The application checks if a local MySQL instance is active on port 3306. 
+  * If MySQL is detected and configured in `settings.py`, it connects seamlessly.
+  * If no MySQL server is running, the application AUTOMATICALLY fails back 
+    to a robust SQLite file `db.sqlite3` inside the project root, allowing you 
+    to develop and test with zero configuration!
+
+STEP 3.6: Run Database Migrations
+Create the necessary database tables (for Auth Users, Business Logs, Products, 
+Cart transactions, Invoices, and Festival Mode Settings):
+  python manage.py migrate
+
+STEP 3.7: Create a Developer Superuser
+Create an initial administrator account to log in to the Django admin panel 
+and register custom businesses:
+  python manage.py createsuperuser
+  * Follow the prompts to enter a username, email, and password.
+
+------------------------------------------------------------------------
+4. SEED CREDENTIALS & DEMO USERS
+------------------------------------------------------------------------
+For swift verification and testing, the application has been pre-configured 
+with standard demo roles:
+
+  ROLE: Super Admin (Network Commander)
+  * Username: demo_user
+  * Password: demo_password
+  * Usage: Log in to create and manage active businesses, activate licenses, 
+    and review overall network total billing.
+
+  ROLE: Business Admin (Store Owner)
+  * Username: admin
+  * Password: Zenelait@123
+  * Usage: Access catalog items, manage cashier accounts, view financial 
+    ledgers, configure profit/loss statements, and schedule festival offers.
+
+  ROLE: Staff / Cashier
+  * Username: cashier
+  * Password: cashier@123
+  * Usage: Access the Point of Sale (POS) workspace to scan products, 
+    issue bills, and calculate transactions.
+
+------------------------------------------------------------------------
+5. STARTING THE DEVELOPMENT SERVER
+------------------------------------------------------------------------
+To launch the application server locally, run the following command:
+  python manage.py runserver
+
+Once the server has successfully started, open your web browser and navigate 
+to the following addresses:
+  * Landing Page / Home Portal:  http://127.0.0.1:8000/
+  * Console Operator Sign-In:    http://127.0.0.1:8000/accounts/login/
+  * Django Administration:       http://127.0.0.1:8000/admin/
+
+------------------------------------------------------------------------
+6. KEY FEATURES & USAGE
+------------------------------------------------------------------------
+
+A. MULTI-LANGUAGE TRANSLATION (TAMIL & ENGLISH)
+  * In the top-right corner of the Operator Sign-In page and the top bar 
+    of the admin dashboard, there is a dedicated language switch button.
+  * The translation system features a bidirectional engine that recursively 
+    replaces text strings and placeholders. It automatically sorts dictionary 
+    keys by word-length descending to ensure exact-phrase translations without 
+    distorting short sub-words.
+  * 100% of the UI - including month aggregates, tax tables, invoice details, 
+    role badges, and product fields - translates dynamically to Tamil.
+
+B. RESPONSIVE MOBILE TABS FOR POINT OF SALE (POS)
+  * On mobile screens and small tablets, the POS layout automatically collapses 
+    into a beautiful tabbed view consisting of a "Catalog" tab and a "Cart" tab.
+  * Adding products increments a persistent badge counter on the Cart tab, 
+    showing operators a live count of items pending invoicing.
+  * On desktop and laptop screens, the POS automatically returns to a high-density, 
+    side-by-side split pane display for lightning-fast catalog selection.
+
+C. AUTOMATED WHATSAPP DISPATCH
+  * When completing invoices at the POS, checking the "Send Invoice via WhatsApp" 
+    option triggers a dynamic, templated API message that allows cashiers to send 
+    structured bills directly to customers' phone numbers.
+
+------------------------------------------------------------------------
+7. TROUBLESHOOTING
+------------------------------------------------------------------------
+  * Static Assets Not Displaying:
+    Run `python manage.py collectstatic --noinput` to compile and cache assets.
+  * DB Error (Access Denied):
+    Verify that your local MySQL server is configured with the correct username 
+    and password, or simply shut down MySQL on port 3306 to force the 
+    sqlite3 zero-config failback.
+
+========================================================================
+            Zenelait Infotech Engineering Team • 2026
+========================================================================

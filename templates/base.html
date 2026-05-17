@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Zenelait Infotech Billing System{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=4">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900 font-poppins overflow-x-hidden relative">
+    
+    <!-- Animated Floating Mesh Background (Video-like visual fluid effect) -->
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-slate-50">
+        <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-red-400/30 blur-[100px] animate-blob"></div>
+        <div class="absolute top-[20%] right-[-10%] w-[450px] h-[450px] rounded-full bg-orange-300/30 blur-[100px] animate-blob animation-delay-2000"></div>
+        <div class="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] rounded-full bg-rose-300/20 blur-[120px] animate-blob animation-delay-4000"></div>
+        <div class="absolute bottom-[10%] right-[20%] w-[400px] h-[400px] rounded-full bg-red-200/30 blur-[90px] animate-blob"></div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden relative z-10">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-28 glass-panel m-4 rounded-2xl flex-shrink-0 transition-all duration-300 transform -translate-x-full lg:translate-x-0 fixed lg:relative z-50">
+            <div class="h-full flex flex-col">
+                <div class="flex flex-col items-center justify-center pt-6 pb-4 px-2 relative border-b border-slate-100">
+                    <button id="closeSidebar" class="lg:hidden absolute top-2 right-2 text-slate-600 hover:text-slate-900">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                    <a href="/dashboard/" class="flex flex-col items-center group text-center py-2">
+                        <div class="bg-white p-2 rounded-xl shadow-sm group-hover:shadow-md border border-slate-100 transition-all w-24 h-14 flex items-center justify-center overflow-hidden">
+                            <img src="{% static 'images/logo.svg' %}" alt="Zenelait Infotech" class="w-full h-auto transform group-hover:scale-105 transition-transform duration-300">
+                        </div>
+                    </a>
+                </div>
+                
+                <nav class="flex-1 px-2 space-y-3 mt-4 overflow-y-auto max-h-[calc(100vh-120px)] scrollbar-hide">
+                    {% if request.user.profile.role == 'SUPER_ADMIN' %}
+                    <a href="/super-admin/" class="nav-item active flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-shield-halved text-lg text-indigo-500"></i>
+                        <span class="text-[10px] font-bold text-indigo-600 leading-tight">Console</span>
+                    </a>
+                    {% else %}
+                    <a href="/dashboard/" class="nav-item active flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-chart-line text-lg"></i>
+                        <span class="text-[10px] font-medium leading-tight">Dashboard</span>
+                    </a>
+                    <a href="/billing/" class="nav-item flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-file-invoice-dollar text-lg"></i>
+                        <span class="text-[10px] font-medium leading-tight">Billing (POS)</span>
+                    </a>
+                    {% endif %}
+                    
+                    {% if request.user.profile.role == 'ADMIN' %}
+                    <a href="/inventory/" class="nav-item flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-boxes text-lg"></i>
+                        <span class="text-[10px] font-medium leading-tight">Catalog</span>
+                    </a>
+                    <a href="{% url 'manage_festival_offers' %}" class="nav-item flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-gift text-lg text-red-500"></i>
+                        <span class="text-[10px] font-medium leading-tight text-red-600">Offers</span>
+                    </a>
+                    {% endif %}
+                    
+                    {% if request.user.profile.role != 'SUPER_ADMIN' %}
+                    <a href="/billing/customers/" class="nav-item flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-users text-lg"></i>
+                        <span class="text-[10px] font-medium leading-tight">Customers</span>
+                    </a>
+                    {% endif %}
+                    
+                    {% if request.user.profile.role == 'ADMIN' %}
+                    <a href="{% url 'manage_cashiers' %}" class="nav-item flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-user-shield text-lg"></i>
+                        <span class="text-[10px] font-medium leading-tight">Staff</span>
+                    </a>
+                    
+                    <a href="/reports/" class="nav-item flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-scale-balanced text-lg"></i>
+                        <span class="text-[10px] font-medium leading-tight">Ledger</span>
+                    </a>
+                    <a href="/reports/summary/" class="nav-item flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-chart-pie text-lg"></i>
+                        <span class="text-[10px] font-medium leading-tight">Analytics</span>
+                    </a>
+                    <a href="/reports/tax-profit/" class="nav-item flex flex-col items-center justify-center p-3 rounded-xl hover:bg-slate-100 transition-colors text-center gap-1">
+                        <i class="fas fa-money-bill-trend-up text-lg"></i>
+                        <span class="text-[10px] font-medium leading-tight">P&L / Tax</span>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden">
+            
+            <!-- Navbar -->
+            <header class="h-20 glass-panel m-4 rounded-2xl flex items-center justify-between px-6 z-40">
+                <div class="flex items-center">
+                    <button id="openSidebar" class="lg:hidden text-slate-800 mr-4 focus:outline-none">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <h2 class="text-xl font-semibold hidden sm:block">{% block page_title %}Overview{% endblock %}</h2>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Language Toggle -->
+                    <button class="px-3 py-1 rounded-full glass-btn text-sm hover:scale-105 transition-transform" onclick="toggleLanguage()">
+                        <i class="fas fa-language mr-1"></i> <span id="langText">EN</span>
+                    </button>
+                    
+                    <!-- User Profile & Logout -->
+                    <div class="flex items-center pl-4 border-l border-slate-200 gap-3 ml-2">
+                        <img src="https://ui-avatars.com/api/?name={{ user.username|default:'Admin' }}&background=random" alt="Profile" class="w-8 h-8 rounded-full">
+                        <div class="hidden md:flex flex-col text-left">
+                            <span class="font-semibold text-xs text-slate-800">{{ user.username|default:"Admin User" }}</span>
+                            <span class="text-[9px] font-bold uppercase tracking-wider 
+                                {% if user.profile.role == 'SUPER_ADMIN' %}text-indigo-600
+                                {% elif user.profile.role == 'ADMIN' %}text-rose-500
+                                {% else %}text-emerald-500{% endif %} mt-0.5">
+                                {{ user.profile.get_role_display|default:"Staff" }}
+                            </span>
+                        </div>
+                        <form action="{% url 'logout' %}" method="post" class="m-0 p-0 flex">
+                            {% csrf_token %}
+                            <button type="submit" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="flex-1 overflow-y-auto p-4 pt-0">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </main>
+        
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script src="{% static 'js/main.js' %}?v=99"></script>
+    {% block scripts %}{% endblock %}
+    
+    <!-- Handle Django Messages in Toasts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if messages %}
+                {% for message in messages %}
+                    let type = 'info';
+                    {% if 'error' in message.tags %}type = 'error';
+                    {% elif 'success' in message.tags %}type = 'success';
+                    {% elif 'warning' in message.tags %}type = 'warning';
+                    {% endif %}
+                    if (typeof showToast === 'function') {
+                        showToast("{{ message|escapejs }}", type);
+                    }
+                {% endfor %}
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

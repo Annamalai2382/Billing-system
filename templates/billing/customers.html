@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block title %}Customers | Retail Billing{% endblock %}
+{% block page_title %}Customer Management{% endblock %}
+
+{% block content %}
+<div class="glass-panel p-6 rounded-2xl animate-slide-up">
+    
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-semibold text-slate-800">All Customers</h3>
+        <button class="bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold px-4 py-2 rounded-xl text-sm flex items-center hover:scale-105 transition-transform" onclick="openAddModal()">
+            <i class="fas fa-plus mr-2"></i> Add Customer
+        </button>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="text-slate-500 text-sm border-b border-slate-200">
+                    <th class="pb-3 px-4 font-semibold">Name</th>
+                    <th class="pb-3 px-4 font-semibold">Phone</th>
+                    <th class="pb-3 px-4 font-semibold">Email</th>
+                    <th class="pb-3 px-4 font-semibold">GSTIN</th>
+                    <th class="pb-3 px-4 text-right font-semibold">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm" id="customerTableBody">
+                {% for customer in customers %}
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors" id="row-{{ customer.id }}">
+                    <td class="py-4 px-4 font-medium text-slate-800">{{ customer.name }}</td>
+                    <td class="py-4 px-4 text-slate-600">{{ customer.phone|default:"-" }}</td>
+                    <td class="py-4 px-4 text-slate-600">{{ customer.email|default:"-" }}</td>
+                    <td class="py-4 px-4 text-slate-500 font-mono text-xs">{{ customer.gstin|default:"-" }}</td>
+                    <td class="py-4 px-4 text-right space-x-3">
+                        <button class="text-orange-500 hover:text-orange-600 transition-colors inline-flex items-center" title="Edit" onclick="openEditModal({{ customer.id }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="text-red-400 hover:text-red-600 transition-colors inline-flex items-center" title="Delete" onclick="deleteCustomer({{ customer.id }}, '{{ customer.name|escapejs }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr id="noCustomersRow">
+                    <td colspan="5" class="py-10 text-center text-slate-500">
+                        No customers found. Customers can be added manually or automatically during billing.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Add / Edit Customer Modal -->
+<div id="customerModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+    <div class="glass-panel w-full max-w-md p-6 rounded-2xl animate-slide-up relative shadow-2xl border border-white/40 bg-white/90">
+        <button onclick="closeCustomerModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        
+        <h3 class="text-xl font-bold mb-5 text-slate-800" id="modalTitle">Add Customer</h3>
+        
+        <form id="customerForm" onsubmit="submitCustomerForm(event)" class="space-y-4">
+            <input type="hidden" id="customerId" value="">
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Customer Name *</label>
+                <div class="relative">
+                    <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="custName" required placeholder="Full Name" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:outline-none focus:border-red-500 transition-colors">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Phone Number</label>
+                    <div class="relative">
+                        <i class="fas fa-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="custPhone" placeholder="Mobile" 
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:outline-none focus:border-orange-400 transition-colors">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">GSTIN (Tax ID)</label>
+                    <div class="relative">
+                        <i class="fas fa-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="custGstin" placeholder="15-digit GSTIN" 
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-mono uppercase text-slate-900 focus:outline-none focus:border-orange-400 transition-colors">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Email Address</label>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input type="email" id="custEmail" placeholder="customer@example.com" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:outline-none focus:border-blue-400 transition-colors">
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold py-3 rounded-xl mt-2 shadow-lg hover:opacity-90 transition-all hover:scale-[1.01]">
+                Save Customer
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Custom Confirmation Delete Modal -->
+<div id="deleteConfirmModal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="glass-panel w-full max-w-sm p-6 rounded-2xl animate-slide-up relative shadow-2xl border border-red-100 bg-white text-center">
+        <div class="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+            <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-1">Delete Customer</h3>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+            Are you sure you want to delete <span id="deleteTargetName" class="font-bold text-slate-900"></span>? This operation is permanent.
+        </p>
+        
+        <input type="hidden" id="deleteTargetId" value="">
+        
+        <div class="flex gap-3 justify-center">
+            <button onclick="closeDeleteConfirmModal()" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 font-semibold py-2.5 px-4 rounded-xl transition-colors text-xs uppercase tracking-wider">
+                Cancel
+            </button>
+            <button id="confirmDeleteBtn" onclick="executeCustomerDelete()" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:opacity-90 text-white font-bold py-2.5 px-4 rounded-xl transition-opacity shadow-md shadow-red-500/20 text-xs uppercase tracking-wider">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openCustomerModal() {
+        const modal = document.getElementById('customerModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeCustomerModal() {
+        const modal = document.getElementById('customerModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        // Reset form
+        document.getElementById('customerForm').reset();
+        document.getElementById('customerId').value = '';
+    }
+
+    function openAddModal() {
+        document.getElementById('modalTitle').innerText = 'Add Customer';
+        document.getElementById('submitBtn').innerText = 'Add Customer';
+        openCustomerModal();
+    }
+
+    function openEditModal(id) {
+        document.getElementById('modalTitle').innerText = 'Edit Customer';
+        document.getElementById('submitBtn').innerText = 'Update Details';
+        
+        showToast('Fetching details...', 'info');
+        
+        fetch(`/billing/customers/edit/${id}/`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('customerId').value = data.id;
+            document.getElementById('custName').value = data.name;
+            document.getElementById('custPhone').value = data.phone;
+            document.getElementById('custEmail').value = data.email;
+            document.getElementById('custGstin').value = data.gstin;
+            
+            openCustomerModal();
+        })
+        .catch(err => showToast('Error retrieving details', 'error'));
+    }
+
+    function submitCustomerForm(event) {
+        event.preventDefault();
+        
+        const id = document.getElementById('customerId').value;
+        const isEdit = id !== '';
+        const url = isEdit ? `/billing/customers/edit/${id}/` : '/billing/customers/add/';
+        
+        const formData = new FormData();
+        formData.append('name', document.getElementById('custName').value);
+        formData.append('phone', document.getElementById('custPhone').value);
+        formData.append('email', document.getElementById('custEmail').value);
+        formData.append('gstin', document.getElementById('custGstin').value);
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                closeCustomerModal();
+                showToast(isEdit ? 'Customer updated successfully!' : 'Customer added successfully!', 'success');
+                
+                setTimeout(() => { window.location.reload(); }, 1000);
+            } else {
+                showToast(data.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Save Customer';
+            }
+        })
+        .catch(err => {
+            showToast('Network connection error', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Save Customer';
+        });
+    }
+
+    function deleteCustomer(id, name) {
+        document.getElementById('deleteTargetId').value = id;
+        document.getElementById('deleteTargetName').innerText = name;
+        
+        const modal = document.getElementById('deleteConfirmModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeDeleteConfirmModal() {
+        const modal = document.getElementById('deleteConfirmModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function executeCustomerDelete() {
+        const id = document.getElementById('deleteTargetId').value;
+        const name = document.getElementById('deleteTargetName').innerText;
+        
+        const btn = document.getElementById('confirmDeleteBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>';
+        
+        fetch(`/billing/customers/delete/${id}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            closeDeleteConfirmModal();
+            
+            if (data.status === 'success') {
+                showToast(`Successfully deleted ${name}`, 'success');
+                
+                const row = document.getElementById(`row-${id}`);
+                if (row) {
+                    row.style.transition = 'all 0.3s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(20px)';
+                    
+                    setTimeout(() => {
+                        row.remove();
+                        // Check if empty
+                        const body = document.getElementById('customerTableBody');
+                        const remainingRows = body.querySelectorAll('tr:not([id="noCustomersRow"])');
+                        if (remainingRows.length === 0) {
+                            body.innerHTML = `
+                                <tr id="noCustomersRow">
+                                    <td colspan="5" class="py-10 text-center text-slate-500">
+                                        No customers found.
+                                    </td>
+                                </tr>`;
+                        }
+                    }, 300);
+                }
+            } else {
+                showToast('Failed to delete customer: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            closeDeleteConfirmModal();
+            showToast('An error occurred during deletion', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = 'Delete';
+        });
+    }
+</script>
+{% endblock %}

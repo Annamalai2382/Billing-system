@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sales Summary Analytics | Retail Billing{% endblock %}
+{% block page_title %}Periodical Analytics{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-slide-up">
+    
+    <!-- High Fidelity Toggle Navigation -->
+    <div class="flex justify-between items-center flex-wrap gap-4">
+        <div class="flex gap-2 p-1 bg-slate-200/60 rounded-xl">
+            <button onclick="switchPeriod('monthly')" id="periodBtnMonthly" class="px-5 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all bg-white text-slate-800 shadow-sm flex items-center">
+                <i class="fas fa-calendar-day mr-1.5"></i> Monthly Sales
+            </button>
+            <button onclick="switchPeriod('quarterly')" id="periodBtnQuarterly" class="px-5 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all text-slate-500 hover:text-slate-800 flex items-center">
+                <i class="fas fa-chart-pie mr-1.5"></i> Quarterly Sales
+            </button>
+            <button onclick="switchPeriod('yearly')" id="periodBtnYearly" class="px-5 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all text-slate-500 hover:text-slate-800 flex items-center">
+                <i class="fas fa-calendar-days mr-1.5"></i> Yearly Sales
+            </button>
+        </div>
+        
+        <div class="flex gap-2">
+            <button class="glass-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 flex items-center hover:bg-slate-50 shadow-sm" onclick="window.print()">
+                <i class="fas fa-print mr-1.5 text-slate-400"></i> Print PDF Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Visual Interactive Analytics Card -->
+    <div class="glass-panel p-6 rounded-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h3 class="text-lg font-black text-slate-800" id="chartTitleLabel">Monthly Revenue Velocity</h3>
+                <p class="text-xs text-slate-500">Period-over-period gross billing performance</p>
+            </div>
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center text-sm">
+                <i class="fas fa-chart-simple"></i>
+            </div>
+        </div>
+        <div class="relative h-72 w-full">
+            <!-- Chart.js canvas insertion -->
+            <canvas id="velocityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Data Tables Collection -->
+    <div class="glass-panel rounded-2xl overflow-hidden">
+        
+        <!-- Monthly Grid Section -->
+        <div id="monthlyTableView" class="period-view p-6">
+            <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center">
+                <span class="w-2 h-2 bg-teal-500 rounded-full mr-2"></span> Historical Monthly Aggregates
+            </h4>
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-slate-500 text-[10px] uppercase bg-slate-50 font-bold border-b border-slate-200">
+                            <th class="py-3.5 px-6">Billing Period</th>
+                            <th class="py-3.5 px-6">Invoice Volumes</th>
+                            <th class="py-3.5 px-6">Average Order Size (AOV)</th>
+                            <th class="py-3.5 px-6">Total Value Collected</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for row in monthly %}
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                            <td class="py-4 px-6 font-bold text-slate-800">{{ row.period|date:"F Y" }}</td>
+                            <td class="py-4 px-6 font-medium text-slate-600"><i class="fas fa-receipt text-slate-400 mr-1.5 text-xs"></i> {{ row.count }} Sales</td>
+                            <td class="py-4 px-6 font-mono text-xs text-slate-500">
+                                {% widthratio row.total row.count 1 as aov %}₹{{ aov }}
+                            </td>
+                            <td class="py-4 px-6 font-black text-emerald-600">₹{{ row.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="py-10 text-center text-slate-400">No billing data recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quarterly Grid Section -->
+        <div id="quarterlyTableView" class="period-view p-6 hidden">
+            <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center">
+                <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span> Historical Quarterly Aggregates
+            </h4>
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-slate-500 text-[10px] uppercase bg-slate-50 font-bold border-b border-slate-200">
+                            <th class="py-3.5 px-6">Billing Period</th>
+                            <th class="py-3.5 px-6">Invoice Volumes</th>
+                            <th class="py-3.5 px-6">Average Order Size (AOV)</th>
+                            <th class="py-3.5 px-6">Total Value Collected</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for row in quarterly %}
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                            <td class="py-4 px-6 font-bold text-slate-800">
+                                {{ row.period|date:"Y" }} - Q{% if row.period|date:"m" == "01" %}1{% elif row.period|date:"m" == "04" %}2{% elif row.period|date:"m" == "07" %}3{% else %}4{% endif %}
+                            </td>
+                            <td class="py-4 px-6 font-medium text-slate-600"><i class="fas fa-receipt text-slate-400 mr-1.5 text-xs"></i> {{ row.count }} Sales</td>
+                            <td class="py-4 px-6 font-mono text-xs text-slate-500">
+                                {% widthratio row.total row.count 1 as aov %}₹{{ aov }}
+                            </td>
+                            <td class="py-4 px-6 font-black text-emerald-600">₹{{ row.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="py-10 text-center text-slate-400">No billing data recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Yearly Grid Section -->
+        <div id="yearlyTableView" class="period-view p-6 hidden">
+            <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center">
+                <span class="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span> Historical Annual Aggregates
+            </h4>
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-slate-500 text-[10px] uppercase bg-slate-50 font-bold border-b border-slate-200">
+                            <th class="py-3.5 px-6">Billing Year</th>
+                            <th class="py-3.5 px-6">Invoice Volumes</th>
+                            <th class="py-3.5 px-6">Average Order Size (AOV)</th>
+                            <th class="py-3.5 px-6">Total Value Collected</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for row in yearly %}
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                            <td class="py-4 px-6 font-bold text-slate-800">{{ row.period|date:"Y" }} Fiscal Year</td>
+                            <td class="py-4 px-6 font-medium text-slate-600"><i class="fas fa-receipt text-slate-400 mr-1.5 text-xs"></i> {{ row.count }} Sales</td>
+                            <td class="py-4 px-6 font-mono text-xs text-slate-500">
+                                {% widthratio row.total row.count 1 as aov %}₹{{ aov }}
+                            </td>
+                            <td class="py-4 px-6 font-black text-emerald-600">₹{{ row.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="py-10 text-center text-slate-400">No billing data recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Load Chart.js safely -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Precompute and reverse Django data loops inside dynamic JS arrays
+    const dataSets = {
+        monthly: {
+            labels: [{% for r in monthly %}"{{ r.period|date:'M Y' }}",{% endfor %}].reverse(),
+            values: [{% for r in monthly %}{{ r.total }},{% endfor %}].reverse()
+        },
+        quarterly: {
+            labels: [{% for r in quarterly %}"{{ r.period|date:'Y' }}-Q{% if r.period|date:'m' == '01' %}1{% elif r.period|date:'m' == '04' %}2{% elif r.period|date:'m' == '07' %}3{% else %}4{% endif %}",{% endfor %}].reverse(),
+            values: [{% for r in quarterly %}{{ r.total }},{% endfor %}].reverse()
+        },
+        yearly: {
+            labels: [{% for r in yearly %}"{{ r.period|date:'Y' }}",{% endfor %}].reverse(),
+            values: [{% for r in yearly %}{{ r.total }},{% endfor %}].reverse()
+        }
+    };
+
+    let chartInstance = null;
+
+    function initChart(type) {
+        const ctx = document.getElementById('velocityChart').getContext('2d');
+        
+        // Handle gradient fill
+        const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)'); // Indigo
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+        const config = {
+            type: 'line',
+            data: {
+                labels: dataSets[type].labels,
+                datasets: [{
+                    label: 'Gross Sales (₹)',
+                    data: dataSets[type].values,
+                    borderColor: '#6366f1',
+                    borderWidth: 3,
+                    tension: 0.35,
+                    fill: true,
+                    backgroundColor: gradient,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleFont: { size: 11, weight: 'bold' },
+                        bodyFont: { size: 12, weight: 'black' },
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return '₹' + context.parsed.y.toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', drawBorder: false },
+                        ticks: {
+                            font: { size: 10, weight: 'medium' },
+                            color: '#64748b',
+                            callback: function(value) { return '₹' + value; }
+                        }
+                    },
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: {
+                            font: { size: 10, weight: 'bold' },
+                            color: '#64748b'
+                        }
+                    }
+                }
+            }
+        };
+
+        if(chartInstance) {
+            chartInstance.destroy();
+        }
+        chartInstance = new Chart(ctx, config);
+    }
+
+    function switchPeriod(period) {
+        // Step 1: Buttons Styling Reset
+        ['monthly', 'quarterly', 'yearly'].forEach(p => {
+            const btn = document.getElementById('periodBtn' + p.charAt(0).toUpperCase() + p.slice(1));
+            btn.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+            btn.classList.add('text-slate-500');
+        });
+        
+        // Highlight selected button
+        const activeBtn = document.getElementById('periodBtn' + period.charAt(0).toUpperCase() + period.slice(1));
+        activeBtn.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-500');
+
+        // Step 2: Hide all tables, show target table
+        document.querySelectorAll('.period-view').forEach(view => view.classList.add('hidden'));
+        document.getElementById(period + 'TableView').classList.remove('hidden');
+
+        // Step 3: Update Chart & Title
+        const labels = {
+            'monthly': 'Monthly Revenue Velocity',
+            'quarterly': 'Quarterly Billing Progress',
+            'yearly': 'Fiscal Year Revenue Momentum'
+        };
+        document.getElementById('chartTitleLabel').textContent = labels[period];
+        initChart(period);
+    }
+
+    // Initial bootstrapping on load
+    document.addEventListener('DOMContentLoaded', () => {
+        initChart('monthly');
+    });
+</script>
+{% endblock %}

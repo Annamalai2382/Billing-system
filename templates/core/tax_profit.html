@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tax & Profit Summary | Retail Billing{% endblock %}
+{% block page_title %}Tax & Profit Reporter{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-slide-up">
+    
+    <!-- Top Level Fiscal Aggregates -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Turnover -->
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gross Revenue</span>
+            <h3 class="text-xl font-black text-slate-800 mt-1">₹{{ overall_sales }}</h3>
+            <div class="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-sm absolute top-5 right-5 shadow-sm">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="text-[10px] text-slate-400 font-semibold mt-2 uppercase">Turnover Pool</div>
+        </div>
+
+        <!-- Procurement Expense -->
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Operating Cost</span>
+            <h3 class="text-xl font-black text-slate-800 mt-1">₹{{ overall_purchases }}</h3>
+            <div class="w-9 h-9 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center text-sm absolute top-5 right-5 shadow-sm">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <div class="text-[10px] text-slate-400 font-semibold mt-2 uppercase">Total Procurement</div>
+        </div>
+
+        <!-- Tax Liability -->
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">GST Collected</span>
+            <h3 class="text-xl font-black text-rose-600 mt-1">₹{{ overall_tax }}</h3>
+            <div class="w-9 h-9 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center text-sm absolute top-5 right-5 shadow-sm">
+                <i class="fas fa-landmark"></i>
+            </div>
+            <div class="text-[10px] text-slate-400 font-semibold mt-2 uppercase">Outward Liability</div>
+        </div>
+
+        <!-- Net Profit -->
+        <div class="glass-panel p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-indigo-600">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Net Profit Margin</span>
+            <h3 class="text-xl font-black text-indigo-600 mt-1">₹{{ overall_profit }}</h3>
+            <div class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-sm absolute top-5 right-5 shadow-sm">
+                <i class="fas fa-piggy-bank"></i>
+            </div>
+            <div class="text-[10px] text-slate-400 font-semibold mt-2 uppercase">Net Retained Margin</div>
+        </div>
+    </div>
+
+    <!-- Visual Comparative Profit/Cost Chart -->
+    <div class="glass-panel p-6 rounded-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h3 class="text-lg font-black text-slate-800">Revenue vs Operating Cost Velocity</h3>
+                <p class="text-xs text-slate-500">Historical comparative cashflow trend matrix</p>
+            </div>
+            <div class="flex gap-2">
+                <span class="flex items-center text-[10px] font-bold text-slate-500"><span class="w-2.5 h-2.5 bg-indigo-500 rounded mr-1"></span> Sales</span>
+                <span class="flex items-center text-[10px] font-bold text-slate-500"><span class="w-2.5 h-2.5 bg-rose-400 rounded mr-1"></span> Cost</span>
+            </div>
+        </div>
+        <div class="relative h-64 w-full">
+            <canvas id="profitComparisonChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Master Ledger Grid -->
+    <div class="glass-panel rounded-2xl overflow-hidden">
+        <div class="border-b border-slate-200 px-6 py-4 bg-slate-50/50 flex justify-between items-center">
+            <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center">
+                <i class="fas fa-scale-balanced mr-2 text-slate-400"></i> Comprehensive Periodic Profit & Tax Grid
+            </h4>
+            <button class="glass-btn px-4 py-1.5 rounded-xl text-xs font-bold text-slate-600 flex items-center shadow-sm hover:bg-white" onclick="window.print()">
+                <i class="fas fa-print mr-1 text-slate-400"></i> Print
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-slate-500 text-[10px] uppercase bg-slate-50 font-bold border-b border-slate-200">
+                        <th class="py-3.5 px-6">Fiscal Month</th>
+                        <th class="py-3.5 px-6">Gross Sales (Turnover)</th>
+                        <th class="py-3.5 px-6">Outward Tax (GST)</th>
+                        <th class="py-3.5 px-6">Operating Expenses</th>
+                        <th class="py-3.5 px-6">Retained Net Profit</th>
+                        <th class="py-3.5 px-6 text-center">Profit Margin %</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for row in report_list %}
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                        <td class="py-4 px-6 font-bold text-slate-800">{{ row.period|date:"F Y" }}</td>
+                        <td class="py-4 px-6 font-bold text-slate-700 font-mono text-xs">₹{{ row.sales }}</td>
+                        <td class="py-4 px-6 text-rose-600 font-medium font-mono text-xs">₹{{ row.tax }}</td>
+                        <td class="py-4 px-6 text-slate-600 font-medium font-mono text-xs">₹{{ row.purchases }}</td>
+                        <td class="py-4 px-6 font-black {% if row.profit >= 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">₹{{ row.profit }}</td>
+                        <td class="py-4 px-6 text-center">
+                            <span class="px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider
+                                {% if row.margin > 30 %}bg-emerald-100 text-emerald-600 border border-emerald-200
+                                {% elif row.margin > 0 %}bg-indigo-100 text-indigo-600 border border-indigo-200
+                                {% else %}bg-rose-100 text-rose-600 border border-rose-200{% endif %}">
+                                {{ row.margin }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="py-12 text-center text-slate-400 italic">No multi-stream financial data discovery logged yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Standard Analytics Engine -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('profitComparisonChart').getContext('2d');
+
+        // Map data lists and reverse for chronological plotting
+        const labels = [{% for r in report_list %}"{{ r.period|date:'M Y' }}",{% endfor %}].reverse();
+        const salesData = [{% for r in report_list %}{{ r.sales }},{% endfor %}].reverse();
+        const costData = [{% for r in report_list %}{{ r.purchases }},{% endfor %}].reverse();
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Gross Turnover',
+                        data: salesData,
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        barThickness: 25,
+                    },
+                    {
+                        label: 'Procurement Expense',
+                        data: costData,
+                        backgroundColor: '#fb7185',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        barThickness: 25,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        bodyFont: { size: 11, weight: 'black' },
+                        padding: 10,
+                        callbacks: {
+                            label: function(c) {
+                                return c.dataset.label + ': ₹' + c.parsed.y.toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { font: { size: 10, weight: 'bold' }, color: '#64748b' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', drawBorder: false },
+                        ticks: {
+                            font: { size: 10 },
+                            color: '#64748b',
+                            callback: function(v) { return '₹' + v; }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

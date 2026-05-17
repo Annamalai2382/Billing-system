@@ -1,0 +1,634 @@
+{% extends 'base.html' %}
+
+{% block title %}Billing | Zenelait Infotech Billing{% endblock %}
+{% block page_title %}Point of Sale (POS){% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-full pb-6">
+    <!-- Responsive Tabs for Mobile (Visible below lg) -->
+    <div class="lg:hidden flex border border-slate-200/50 mb-4 bg-white/60 backdrop-blur rounded-2xl p-1 shadow-sm gap-1 z-10">
+        <button id="mobileTabCatalog" onclick="switchMobilePosTab('catalog')" class="flex-1 py-3 text-center rounded-xl font-bold text-xs uppercase tracking-wider transition-all bg-gradient-to-r from-red-600 to-red-800 text-white shadow-sm flex items-center justify-center gap-2">
+            <i class="fas fa-boxes text-sm"></i> <span>Catalog</span>
+        </button>
+        <button id="mobileTabCart" onclick="switchMobilePosTab('cart')" class="flex-1 py-3 text-center rounded-xl font-bold text-xs uppercase tracking-wider transition-all text-slate-600 hover:text-slate-800 flex items-center justify-center gap-2">
+            <i class="fas fa-shopping-cart text-sm"></i> <span>Cart</span> <span id="mobileCartCount" class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
+        </button>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6 h-full">
+    
+    <!-- Left Pane: Product Catalog -->
+    <div id="posCatalogPane" class="w-full lg:w-3/5 lg:flex glass-panel p-4 rounded-2xl flex flex-col h-auto min-h-[400px] lg:h-[calc(100vh-140px)] animate-slide-up">
+        
+        <!-- Search and Scan Controls -->
+        <div class="mb-4 flex flex-col sm:flex-row gap-3">
+            <!-- Product Search -->
+            <div class="relative flex-1">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                <input type="text" id="productSearch" placeholder="Search catalog by name..." 
+                       class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-slate-900 focus:outline-none focus:border-red-500 transition-colors text-sm">
+            </div>
+            
+            <!-- Barcode Input -->
+            <div class="relative flex-1">
+                <i class="fas fa-barcode absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                <input type="text" id="barcodeInput" placeholder="Scan/Type Barcode/SKU..." 
+                       class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-10 text-slate-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono" autofocus autocomplete="off">
+                <button id="startCameraScanner" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-red-500 hover:text-red-600 p-1.5" title="Open Camera Scan">
+                    <i class="fas fa-camera"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Camera Scanner Panel -->
+        <div id="scannerContainer" class="mb-4 hidden bg-slate-900 rounded-xl overflow-hidden relative border border-slate-800 shadow-lg animate-slide-up">
+            <div class="flex justify-between items-center p-3 bg-slate-800/50 text-white text-xs font-semibold border-b border-slate-700">
+                <span><i class="fas fa-video mr-1 text-red-400 animate-pulse"></i> Scan Product Barcode / QR</span>
+                <button id="stopCameraScanner" class="hover:text-red-400 transition-colors"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="reader" class="w-full bg-black min-h-[280px] md:min-h-[350px] overflow-hidden"></div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 gap-4" id="productGrid">
+            {% for product in products %}
+            <div class="glass-card p-4 rounded-xl cursor-pointer group" onclick="addToCart({{ product.id }}, '{{ product.name }}', {{ product.price }}, {{ product.gst_rate }}, {{ product.category.id|default:'null' }})">
+                <div class="w-full h-24 bg-slate-50 rounded-lg mb-3 flex items-center justify-center overflow-hidden text-3xl text-slate-400 group-hover:text-red-400 transition-colors">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    {% else %}
+                        <i class="fas fa-box"></i>
+                    {% endif %}
+                </div>
+                <h4 class="font-medium text-sm truncate mb-1">{{ product.name }}</h4>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-red-500 font-bold">₹{{ product.price }}</span>
+                    <span class="text-[10px] text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">{{ product.gst_rate }}% GST</span>
+                </div>
+                <button class="w-full py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 group-hover:bg-red-500 group-hover:text-white group-hover:border-red-500 transition-all uppercase tracking-wider">
+                    <i class="fas fa-plus mr-1"></i> Add to Cart
+                </button>
+            </div>
+            {% endfor %}
+            
+            {% if not products %}
+            <div class="col-span-full text-center text-slate-500 py-10">
+                No products found. Add products in inventory.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Pane: Current Invoice / Cart -->
+    <div id="posCartPane" class="w-full lg:w-2/5 lg:flex glass-panel p-4 rounded-2xl flex flex-col h-auto min-h-[500px] lg:h-[calc(100vh-140px)] animate-slide-up delay-100 hidden">
+        
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-lg">Current Invoice</h3>
+            <button class="text-red-400 hover:text-red-300 text-sm" onclick="clearCart()"><i class="fas fa-trash mr-1"></i> Clear</button>
+        </div>
+
+        <!-- Customer Selection -->
+        <div class="mb-4 space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+                <div class="relative">
+                    <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" id="customerName" placeholder="Customer Name" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-sm text-slate-900 focus:outline-none focus:border-red-500 transition-colors">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" id="customerPhone" placeholder="Phone Number" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-sm text-slate-900 focus:outline-none focus:border-green-400 transition-colors">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                    <input type="email" id="customerEmail" placeholder="Email" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-sm text-slate-900 focus:outline-none focus:border-blue-400 transition-colors">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" id="customerGstin" placeholder="GSTIN (B2B Only)" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-sm text-slate-900 focus:outline-none focus:border-orange-400 uppercase transition-colors">
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto pr-2 mb-4 space-y-2" id="cartItems">
+            <!-- Items injected by JS -->
+            <div class="text-center text-slate-400 py-10" id="emptyCartMsg">
+                <i class="fas fa-shopping-basket text-4xl mb-2"></i>
+                <p>Cart is empty</p>
+            </div>
+        </div>
+
+        <!-- Totals & Payment -->
+        <div class="mt-auto bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="flex justify-between text-sm mb-2">
+                <span class="text-slate-600">Subtotal:</span>
+                <span id="subTotal">₹0.00</span>
+            </div>
+            <div class="flex justify-between text-sm mb-1 text-slate-500 pl-2 italic">
+                <span>- CGST (Central @ 50%):</span>
+                <span id="cgstTotal">₹0.00</span>
+            </div>
+            <div class="flex justify-between text-sm mb-2 text-slate-500 pl-2 italic pb-1 border-b border-slate-100">
+                <span>- SGST (State @ 50%):</span>
+                <span id="sgstTotal">₹0.00</span>
+            </div>
+            <div class="flex justify-between text-sm mb-2 font-medium text-slate-700">
+                <span>Total GST Tax:</span>
+                <span id="gstTotal">₹0.00</span>
+            </div>
+            <div class="flex justify-between text-sm mb-2 font-bold text-red-500 bg-red-50 p-1 rounded hidden" id="discountRow">
+                <span>Festival Discount:</span>
+                <span id="discountTotal">-₹0.00</span>
+            </div>
+            <div class="text-xs text-red-400 mb-2 hidden" id="appliedOfferName"></div>
+            <div class="mt-3 pt-3 border-t border-slate-200 flex flex-col gap-3">
+                <div class="flex justify-between items-center font-bold text-lg">
+                    <span class="text-slate-800">Total Amount:</span>
+                    <span class="text-red-400 text-xl" id="grandTotal">₹0.00</span>
+                </div>
+                <label class="flex items-center space-x-2 text-sm cursor-pointer text-slate-600 hover:text-slate-900 transition-colors">
+                    <input type="checkbox" id="sendWhatsapp" class="rounded border-slate-200 bg-slate-50 text-green-500 focus:ring-green-500" checked>
+                    <span><i class="fab fa-whatsapp text-green-400 mr-1"></i> Send Invoice via WhatsApp</span>
+                </label>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <button class="glass-btn py-3 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-colors" onclick="processPayment('CASH')">
+                    <i class="fas fa-money-bill-wave mr-2 text-green-400"></i> Cash
+                </button>
+                <button class="glass-btn py-3 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-colors" onclick="processPayment('UPI')">
+                    <i class="fas fa-qrcode mr-2 text-red-400"></i> UPI/Card
+                </button>
+            </div>
+        </div>
+        
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- HTML5-QRCode Scanner library -->
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<script>
+    let cart = [];
+    let lastAddedId = null; // Tracks recently added item ID for pulsing animation
+
+    // Enhanced Product Map for faster lookups by SKU, ID, or Barcode
+    const productMap = {};
+    {% for product in products %}
+    (function() {
+        const pData = {
+            id: {{ product.id }},
+            name: "{{ product.name|escapejs }}",
+            sku: "{{ product.sku|escapejs }}",
+            price: parseFloat("{{ product.price }}"),
+            gstRate: parseFloat("{{ product.gst_rate }}"),
+            categoryId: {{ product.category.id|default:"null" }}
+        };
+        
+        // Map by ID
+        productMap["ID_" + pData.id] = pData;
+        
+        // Map by SKU (if exists)
+        if (pData.sku) {
+            productMap[pData.sku.toLowerCase()] = pData;
+        }
+    })();
+    {% endfor %}
+</script>
+
+{{ offers|json_script:"offers-data" }}
+
+<script>
+    const activeOffers = JSON.parse(document.getElementById('offers-data').textContent);
+
+    // Beep sound synthesizer using Web Audio API
+    function playBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime); // 880Hz (A5)
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
+        } catch (e) {
+            console.error("AudioContext beep failure: ", e);
+        }
+    }
+
+    function addToCart(id, name, price, gstRate, categoryId = null) {
+        const existing = cart.find(item => item.id === id);
+        if (existing) {
+            existing.qty += 1;
+        } else {
+            cart.push({ id, name, price, gstRate, categoryId, qty: 1 });
+        }
+        
+        lastAddedId = id; // Flag for highlight pulse animation
+        updateCartUI();
+        showToast(`Added ${name} to cart`, 'success');
+    }
+
+    function handleScanSuccess(decodedText) {
+        const input = decodedText.trim();
+        if (!input) return;
+
+        // 1. Try SKU Match (Case-insensitive)
+        let product = productMap[input.toLowerCase()];
+        
+        // 2. Try ID Match (If input is purely numeric)
+        if (!product && /^\d+$/.test(input)) {
+            product = productMap["ID_" + input];
+        }
+        
+        // 3. Fallback: Search by Exact Name (Case-insensitive, trimmed)
+        if (!product) {
+            product = Object.values(productMap).find(p => p.name.trim().toLowerCase() === input.toLowerCase());
+        }
+        
+        if (product) {
+            playBeep();
+            addToCart(product.id, product.name, product.price, product.gstRate, product.categoryId);
+        } else {
+            showToast(`Product "${input}" not found! Try searching by name in the left panel.`, 'error');
+        }
+    }
+
+    function updateQty(id, change) {
+        const item = cart.find(i => i.id === id);
+        if (item) {
+            item.qty += change;
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.id !== id);
+            }
+            updateCartUI();
+        }
+    }
+
+    function setQty(id, newQty) {
+        const item = cart.find(i => i.id === id);
+        if (item) {
+            const parsed = parseInt(newQty);
+            if (!isNaN(parsed) && parsed > 0) {
+                item.qty = parsed;
+            } else if (parsed <= 0) {
+                removeFromCart(id);
+            }
+            updateCartUI();
+        }
+    }
+
+    function removeFromCart(id) {
+        const item = cart.find(i => i.id === id);
+        if (item) {
+            const name = item.name;
+            cart = cart.filter(i => i.id !== id);
+            updateCartUI();
+            showToast(`Removed ${name} from cart`, 'info');
+        }
+    }
+
+    function clearCart() {
+        if(cart.length === 0) return;
+        cart = [];
+        updateCartUI();
+        showToast('Invoice cleared', 'info');
+    }
+
+    function updateCartUI() {
+        const cartDiv = document.getElementById('cartItems');
+        
+        let subTotal = 0;
+        let gstTotal = 0;
+        let totalDiscount = 0;
+        let appliedOffer = null;
+
+        if (cart.length === 0) {
+            cartDiv.innerHTML = `
+                <div class="text-center text-slate-400 py-10" id="emptyCartMsg">
+                    <i class="fas fa-shopping-basket text-4xl mb-2"></i>
+                    <p>Cart is empty</p>
+                </div>`;
+            document.getElementById('discountRow').classList.add('hidden');
+            document.getElementById('appliedOfferName').classList.add('hidden');
+        } else {
+            cartDiv.innerHTML = '';
+            
+            cart.forEach(item => {
+                // Calculate best offer for this item
+                let bestDiscount = 0;
+                let itemOffer = null;
+
+                activeOffers.forEach(offer => {
+                    let applies = false;
+                    if (offer.apply_to_all) {
+                        applies = true;
+                    } else if (offer.product_ids.includes(item.id)) {
+                        applies = true;
+                    } else if (item.categoryId && offer.category_ids.includes(item.categoryId)) {
+                        applies = true;
+                    }
+
+                    if (applies) {
+                        let currentDiscount = 0;
+                        if (offer.discount_type === 'PERCENTAGE') {
+                            currentDiscount = item.price * (offer.discount_value / 100);
+                        } else {
+                            currentDiscount = offer.discount_value;
+                        }
+
+                        if (currentDiscount > bestDiscount) {
+                            bestDiscount = currentDiscount;
+                            itemOffer = offer;
+                        }
+                    }
+                });
+
+                const finalPrice = Math.max(0, item.price - bestDiscount);
+                item.finalPrice = finalPrice; // Store for backend
+                item.discount = bestDiscount;
+
+                const itemTotal = item.price * item.qty;
+                const itemFinalTotal = finalPrice * item.qty;
+                const itemGst = itemFinalTotal * (item.gstRate / 100);
+                
+                subTotal += itemTotal;
+                gstTotal += itemGst;
+                totalDiscount += (bestDiscount * item.qty);
+                
+                if (itemOffer && (!appliedOffer || itemOffer.priority > appliedOffer.priority)) {
+                    appliedOffer = itemOffer;
+                }
+
+                const row = document.createElement('div');
+                const shouldHighlight = item.id === lastAddedId;
+                row.className = `flex flex-col bg-slate-50 p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors ${shouldHighlight ? 'animate-highlight-row' : ''}`;
+                row.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium truncate w-32">${item.name}</p>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs ${bestDiscount > 0 ? 'line-through text-slate-400' : 'text-slate-500'}">₹${item.price.toFixed(2)}</span>
+                                ${bestDiscount > 0 ? `<span class="text-xs font-bold text-red-500">₹${finalPrice.toFixed(2)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-1 bg-white border border-slate-300 rounded-xl px-1.5 py-1 shadow-sm">
+                            <button onclick="updateQty(${item.id}, -1)" class="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-red-500 hover:text-white font-bold transition-all text-slate-600">-</button>
+                            <input type="number" value="${item.qty}" min="1" onchange="setQty(${item.id}, this.value)" class="w-12 h-9 text-center bg-transparent border-none focus:outline-none text-sm font-bold text-slate-800 appearance-none m-0" style="-moz-appearance: textfield;">
+                            <button onclick="updateQty(${item.id}, 1)" class="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-green-500 hover:text-white font-bold transition-all text-slate-600">+</button>
+                        </div>
+                        <div class="text-right ml-4 min-w-[80px]">
+                            <p class="text-base font-bold text-slate-900">₹${itemFinalTotal.toFixed(2)}</p>
+                        </div>
+                        <button onclick="removeFromCart(${item.id})" class="ml-3 w-10 h-10 flex items-center justify-center text-red-400 hover:text-white hover:bg-red-500 border border-red-100 hover:border-red-500 rounded-xl transition-all shadow-sm" title="Remove Item">
+                            <i class="fas fa-trash-can text-sm"></i>
+                        </button>
+                    </div>
+                    ${bestDiscount > 0 ? `<div class="text-[10px] text-red-400 mt-1"><i class="fas fa-tag mr-1"></i> ${itemOffer.name} applied</div>` : ''}
+                `;
+                cartDiv.appendChild(row);
+            });
+        }
+
+        // Reset highlight state after render cycle
+        lastAddedId = null;
+
+        const grandTotal = (subTotal - totalDiscount) + gstTotal;
+        const halfGst = gstTotal / 2;
+
+        document.getElementById('subTotal').innerText = `₹${subTotal.toFixed(2)}`;
+        document.getElementById('gstTotal').innerText = `₹${gstTotal.toFixed(2)}`;
+        document.getElementById('cgstTotal').innerText = `₹${halfGst.toFixed(2)}`;
+        document.getElementById('sgstTotal').innerText = `₹${halfGst.toFixed(2)}`;
+        document.getElementById('grandTotal').innerText = `₹${grandTotal.toFixed(2)}`;
+
+        const discountRow = document.getElementById('discountRow');
+        const offerLabel = document.getElementById('appliedOfferName');
+        
+        if (totalDiscount > 0) {
+            discountRow.classList.remove('hidden');
+            document.getElementById('discountTotal').innerText = `-₹${totalDiscount.toFixed(2)}`;
+            if (appliedOffer) {
+                offerLabel.classList.remove('hidden');
+                offerLabel.innerHTML = `<i class="fas fa-gift mr-1"></i> Offer: ${appliedOffer.name}`;
+                offerLabel.dataset.offerName = appliedOffer.name;
+            }
+        } else {
+            discountRow.classList.add('hidden');
+            offerLabel.classList.add('hidden');
+            delete offerLabel.dataset.offerName;
+        }
+
+        // Update mobile cart count badge
+        const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+        const mobileCartCount = document.getElementById('mobileCartCount');
+        if (mobileCartCount) {
+            mobileCartCount.innerText = totalQty;
+        }
+    }
+
+    function processPayment(method) {
+        if (cart.length === 0) {
+            showToast('Cart is empty!', 'error');
+            return;
+        }
+        
+        const btn = event.currentTarget;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Processing...`;
+        btn.disabled = true;
+
+        const customerName = document.getElementById('customerName').value || 'Walk-in Customer';
+        const customerPhone = document.getElementById('customerPhone').value;
+        const customerEmail = document.getElementById('customerEmail').value;
+        const customerGstin = document.getElementById('customerGstin').value;
+        const subTotal = parseFloat(document.getElementById('subTotal').innerText.replace('₹',''));
+        const gstTotal = parseFloat(document.getElementById('gstTotal').innerText.replace('₹',''));
+        const grandTotal = parseFloat(document.getElementById('grandTotal').innerText.replace('₹',''));
+        const discountTotal = parseFloat(document.getElementById('discountTotal').innerText.replace('-₹','') || 0);
+        const appliedOfferName = document.getElementById('appliedOfferName').dataset.offerName || '';
+
+        const data = {
+            cart: cart,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            customerEmail: customerEmail,
+            customerGstin: customerGstin,
+            paymentMethod: method,
+            subTotal: subTotal,
+            gstTotal: gstTotal,
+            grandTotal: grandTotal,
+            discountTotal: discountTotal,
+            appliedOfferName: appliedOfferName
+        };
+
+        fetch('/billing/process/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast(`Payment of ₹${grandTotal} successful via ${method}`, 'success');
+                
+                let redirectUrl = `/billing/invoice/${data.invoice_id}/`;
+                if (document.getElementById('sendWhatsapp').checked) {
+                    redirectUrl += '?share=whatsapp';
+                }
+
+                cart = [];
+                document.getElementById('customerName').value = '';
+                document.getElementById('customerPhone').value = '';
+                updateCartUI();
+                
+                // Redirect to tax invoice view for image generation/printing
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 1500);
+            } else {
+                showToast('Error: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            showToast('Error processing payment', 'error');
+        })
+        .finally(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        });
+    }
+
+    // Hardware Barcode Scanner & Manual Keypress Event
+    const barcodeInput = document.getElementById('barcodeInput');
+    if (barcodeInput) {
+        barcodeInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                const value = this.value.trim();
+                if (value) {
+                    handleScanSuccess(value);
+                    this.value = ''; // Reset for next barcode scan
+                }
+            }
+        });
+    }
+
+    // Camera QR/Barcode Scanner Toggle
+    let html5QrCode = null;
+    const startBtn = document.getElementById('startCameraScanner');
+    const stopBtn = document.getElementById('stopCameraScanner');
+    const scannerContainer = document.getElementById('scannerContainer');
+
+    if (startBtn && stopBtn) {
+        startBtn.addEventListener('click', function() {
+            scannerContainer.classList.remove('hidden');
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+            
+            const config = { 
+                fps: 15, 
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    // Use 70% of the smaller edge for a clean square viewfinder
+                    const size = Math.floor(minEdge * 0.7);
+                    // Ensure it's at least 200px but doesn't overflow the container
+                    const boundedSize = Math.max(200, Math.min(size, viewfinderWidth - 40, viewfinderHeight - 40));
+                    return { width: boundedSize, height: boundedSize };
+                } 
+            };
+            
+            html5QrCode.start(
+                { facingMode: "environment" }, // uses the back/main camera
+                config,
+                (decodedText, decodedResult) => {
+                    // Scanned Successfully
+                    handleScanSuccess(decodedText);
+                    
+                    // Briefly pause scanning to prevent rapid firing for the same item
+                    html5QrCode.pause();
+                    setTimeout(() => {
+                        // Only resume if scanner is still open/active
+                        if (html5QrCode && !scannerContainer.classList.contains('hidden')) {
+                            html5QrCode.resume();
+                        }
+                    }, 1500);
+                },
+                (errorMessage) => {
+                    // Suppress scan match logs
+                }
+            ).catch(err => {
+                console.error("Error starting Camera scanner: ", err);
+                showToast("Cannot open camera. Ensure permissions are allowed.", "error");
+                scannerContainer.classList.add('hidden');
+            });
+        });
+
+        stopBtn.addEventListener('click', function() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    scannerContainer.classList.add('hidden');
+                }).catch(err => {
+                    console.error("Error stopping Camera scanner: ", err);
+                    scannerContainer.classList.add('hidden');
+                });
+            } else {
+                scannerContainer.classList.add('hidden');
+            }
+        });
+    }
+
+    // Attach Search Event Listener
+    document.getElementById('productSearch').addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        const grid = document.getElementById('productGrid');
+        const cards = grid.querySelectorAll('.glass-card');
+        
+        cards.forEach(card => {
+            const title = card.querySelector('h4').innerText.toLowerCase();
+            if (title.includes(query)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+
+    // Switch between Catalog and Cart on mobile devices
+    window.switchMobilePosTab = function(tab) {
+        const catalogPane = document.getElementById('posCatalogPane');
+        const cartPane = document.getElementById('posCartPane');
+        const catalogTab = document.getElementById('mobileTabCatalog');
+        const cartTab = document.getElementById('mobileTabCart');
+        
+        if (tab === 'catalog') {
+            catalogPane.classList.remove('hidden');
+            cartPane.classList.add('hidden');
+            
+            catalogTab.className = "flex-1 py-3 text-center rounded-xl font-bold text-xs uppercase tracking-wider transition-all bg-gradient-to-r from-red-600 to-red-800 text-white shadow-sm flex items-center justify-center gap-2";
+            cartTab.className = "flex-1 py-3 text-center rounded-xl font-bold text-xs uppercase tracking-wider transition-all text-slate-600 hover:text-slate-800 flex items-center justify-center gap-2";
+        } else {
+            catalogPane.classList.add('hidden');
+            cartPane.classList.remove('hidden');
+            
+            cartTab.className = "flex-1 py-3 text-center rounded-xl font-bold text-xs uppercase tracking-wider transition-all bg-gradient-to-r from-red-600 to-red-800 text-white shadow-sm flex items-center justify-center gap-2";
+            catalogTab.className = "flex-1 py-3 text-center rounded-xl font-bold text-xs uppercase tracking-wider transition-all text-slate-600 hover:text-slate-800 flex items-center justify-center gap-2";
+        }
+    };
+</script>
+{% endblock %}

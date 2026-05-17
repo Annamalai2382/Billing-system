@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | Retail Billing{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto animate-slide-up">
+    <div class="glass-card rounded-3xl overflow-hidden shadow-xl border border-white">
+        <div class="bg-slate-900 p-8 text-white relative">
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-red-500/20 rounded-full blur-3xl"></div>
+            <h3 class="text-2xl font-bold relative z-10">Offer Details</h3>
+            <p class="text-slate-400 text-sm mt-1 relative z-10">Configure your seasonal discount parameters below.</p>
+        </div>
+
+        <form method="POST" class="p-8 space-y-8">
+            {% csrf_token %}
+            
+            <!-- Basic Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-700">Offer Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Diwali Mega Sale" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-700">Priority (Higher = Priority)</label>
+                    <input type="number" name="priority" value="0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- Discount Config -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-700">Discount Type</label>
+                    <select name="discount_type" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all">
+                        <option value="PERCENTAGE">Percentage (%)</option>
+                        <option value="FIXED">Fixed Amount (₹)</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-700">Discount Value</label>
+                    <input type="number" step="0.01" name="discount_value" required placeholder="Value (e.g. 20)" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- Dates -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-700">Start Date</label>
+                    <input type="datetime-local" name="start_date" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-700">End Date</label>
+                    <input type="datetime-local" name="end_date" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- Applicability -->
+            <div class="space-y-4 pt-6 border-t border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-slate-800">Target Audience</h4>
+                        <p class="text-xs text-slate-500">Choose which products this offer applies to.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="apply_to_all" id="apply_to_all" class="sr-only peer" checked onchange="toggleScope(this.checked)">
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                        <span class="ml-3 text-sm font-bold text-slate-700">Apply to All Products</span>
+                    </label>
+                </div>
+
+                <div id="scope_section" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Select Products</label>
+                        <select name="products" multiple class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none h-40">
+                            {% for product in products %}
+                            <option value="{{ product.id }}">{{ product.name }} ({{ product.sku }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Select Categories</label>
+                        <select name="categories" multiple class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none h-40">
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-100">
+                <a href="{% url 'manage_festival_offers' %}" class="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all">Cancel</a>
+                <button type="submit" class="glass-btn px-10 py-3 rounded-xl font-bold hover:scale-105 transition-all">Save Offer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleScope(applyToAll) {
+    const scopeSection = document.getElementById('scope_section');
+    if (applyToAll) {
+        scopeSection.classList.add('hidden');
+    } else {
+        scopeSection.classList.remove('hidden');
+    }
+}
+
+// Initial call
+document.addEventListener('DOMContentLoaded', () => {
+    toggleScope(document.getElementById('apply_to_all').checked);
+});
+</script>
+{% endblock %}

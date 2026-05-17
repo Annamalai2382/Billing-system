@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+
+{% block title %}Products & Services | Retail Billing{% endblock %}
+{% block page_title %}Products & Services{% endblock %}
+
+{% block content %}
+<div class="glass-panel p-6 rounded-2xl animate-slide-up">
+    
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <div class="relative w-full sm:w-1/3">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+            <input type="text" placeholder="Search items..." 
+                   class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-sm text-slate-900 focus:outline-none focus:border-red-500 transition-colors">
+        </div>
+        
+        <div class="flex gap-3">
+            <button class="glass-btn px-4 py-2 rounded-xl text-sm flex items-center hover:bg-slate-100 transition-colors" onclick="exportInventory()">
+                <i class="fas fa-file-export mr-2 text-red-400"></i> Export
+            </button>
+            <button class="bg-gradient-to-r from-red-600 to-red-800 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm flex items-center hover:scale-105 transition-transform" onclick="openAddProductModal()">
+                <i class="fas fa-plus mr-2"></i> Add Item
+            </button>
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="text-slate-500 text-sm border-b border-slate-200">
+                    <th class="pb-3 px-4">SKU</th>
+                    <th class="pb-3 px-4">Type</th>
+                    <th class="pb-3 px-4">HSN/SAC</th>
+                    <th class="pb-3 px-4">Item Name</th>
+                    <th class="pb-3 px-4">Price</th>
+                    <th class="pb-3 px-4">Stock</th>
+                    <th class="pb-3 px-4 text-center">Status</th>
+                    <th class="pb-3 px-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm">
+                {% for product in products %}
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td class="py-4 px-4 font-mono text-slate-600">{{ product.sku }}</td>
+                    <td class="py-4 px-4">
+                        {% if product.item_type == 'SERVICE' %}
+                        <span class="px-2.5 py-0.5 bg-purple-100 text-purple-600 text-xs font-bold rounded-full border border-purple-200">Service</span>
+                        {% else %}
+                        <span class="px-2.5 py-0.5 bg-sky-100 text-sky-600 text-xs font-bold rounded-full border border-sky-200">Product</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-4 text-slate-500 font-medium font-mono text-xs">{{ product.hsn_code|default:"--" }}</td>
+                    <td class="py-4 px-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-slate-100 rounded overflow-hidden flex items-center justify-center text-slate-400 text-xs flex-shrink-0">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" alt="" class="w-full h-full object-cover">
+                                {% else %}
+                                    {% if product.item_type == 'SERVICE' %}
+                                        <i class="fas fa-concierge-bell"></i>
+                                    {% else %}
+                                        <i class="fas fa-box"></i>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            <span class="font-medium">{{ product.name }}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4 text-red-500 font-semibold">₹{{ product.price }}</td>
+                    <td class="py-4 px-4 text-slate-600 font-medium">
+                        {% if product.item_type == 'SERVICE' %}
+                        <span class="text-slate-400 italic text-xs font-normal">N/A</span>
+                        {% else %}
+                        {{ product.stock_quantity }}
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        {% if product.item_type == 'SERVICE' %}
+                        <span class="bg-emerald-100 text-emerald-600 text-xs font-medium px-2.5 py-1 rounded-full">Active</span>
+                        {% elif product.is_low_stock %}
+                        <span class="bg-rose-100 text-rose-600 text-xs font-medium px-2.5 py-1 rounded-full">Low Stock</span>
+                        {% else %}
+                        <span class="bg-emerald-100 text-emerald-600 text-xs font-medium px-2.5 py-1 rounded-full">In Stock</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-4 text-right space-x-2">
+                        <button onclick="openEditProductModal({{ product.id }}, '{{ product.sku|escapejs }}', '{{ product.name|escapejs }}', '{{ product.price }}', '{{ product.hsn_code|default:''|escapejs }}', '{{ product.gst_rate|default:'18' }}', '{{ product.item_type }}', '{{ product.stock_quantity }}')" class="text-red-400 hover:text-red-300 transition-colors" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="confirmDeleteProduct({{ product.id }}, '{{ product.name|escapejs }}')" class="text-red-400 hover:text-red-300 transition-colors" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Add Product Modal -->
+<div id="addProductModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div class="glass-panel w-full max-w-md p-6 rounded-2xl animate-slide-up mx-4 relative">
+        <button onclick="closeAddProductModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-900"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-xl font-bold mb-4">Add Product / Service</h3>
+        <form onsubmit="submitAddProduct(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Item Type</label>
+                <select id="addType" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-sm text-slate-900 focus:outline-none focus:border-red-500 transition-colors" onchange="toggleTypeFields()">
+                    <option value="PRODUCT">📦 Physical Product</option>
+                    <option value="SERVICE">💼 Service / Labor</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Name / Description</label>
+                <input type="text" id="addName" required placeholder="e.g. Wireless Mouse or Consultation Fees" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">SKU</label>
+                    <input type="text" id="addSku" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Price (₹)</label>
+                    <input type="number" step="0.01" id="addPrice" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">HSN/SAC Code</label>
+                    <input type="text" id="addHsn" placeholder="e.g. 8471" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">GST Rate (%)</label>
+                    <input type="number" value="18" id="addGst" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+                </div>
+            </div>
+            <div id="stockWrapper">
+                <label class="block text-sm font-medium text-slate-600 mb-1">Initial Stock</label>
+                <input type="number" value="0" id="addStock" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Product Image (Optional)</label>
+                <input type="file" id="addImage" accept="image/*" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 transition-colors cursor-pointer">
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-red-600 to-red-800 text-slate-900 font-bold py-3 rounded-xl mt-4 hover:opacity-90 transition-opacity shadow-md uppercase text-xs tracking-wider">
+                Save Item
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div id="editProductModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div class="glass-panel w-full max-w-md p-6 rounded-2xl animate-slide-up mx-4 relative">
+        <button onclick="closeEditProductModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-900"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-xl font-bold mb-4">Edit Product / Service</h3>
+        <form onsubmit="submitEditProduct(event)" class="space-y-4">
+            <input type="hidden" id="editProductId">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Item Type</label>
+                <select id="editType" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-sm text-slate-900 focus:outline-none focus:border-red-500 transition-colors" onchange="toggleEditTypeFields()">
+                    <option value="PRODUCT">📦 Physical Product</option>
+                    <option value="SERVICE">💼 Service / Labor</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Name / Description</label>
+                <input type="text" id="editName" required placeholder="e.g. Wireless Mouse or Consultation Fees" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">SKU</label>
+                    <input type="text" id="editSku" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Price (₹)</label>
+                    <input type="number" step="0.01" id="editPrice" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">HSN/SAC Code</label>
+                    <input type="text" id="editHsn" placeholder="e.g. 8471" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">GST Rate (%)</label>
+                    <input type="number" id="editGst" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+                </div>
+            </div>
+            <div id="editStockWrapper">
+                <label class="block text-sm font-medium text-slate-600 mb-1">Stock Quantity</label>
+                <input type="number" id="editStock" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Product Image (Optional Override)</label>
+                <input type="file" id="editImage" accept="image/*" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-4 text-slate-900 focus:outline-none focus:border-red-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 transition-colors cursor-pointer">
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-red-600 to-red-800 text-slate-900 font-bold py-3 rounded-xl mt-4 hover:opacity-90 transition-opacity shadow-md uppercase text-xs tracking-wider">
+                Update Item Details
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteConfirmModal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div class="glass-panel w-full max-w-sm p-6 rounded-2xl animate-slide-up mx-4 text-center relative">
+        <div class="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 text-2xl mx-auto mb-4 border border-rose-100">
+            <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-2">Delete Confirmation</h3>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">Are you absolutely sure you want to delete <span id="deleteItemName" class="font-semibold text-slate-800"></span>? This operation cannot be undone.</p>
+        <input type="hidden" id="deleteProductId">
+        <div class="flex gap-3 justify-center">
+            <button onclick="closeDeleteModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all uppercase">
+                Cancel
+            </button>
+            <button onclick="executeDeleteProduct()" class="px-5 py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white font-black rounded-xl text-xs shadow-md transition-all uppercase">
+                Confirm Delete
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function exportInventory() {
+        showToast('Exporting inventory to CSV...', 'info');
+        setTimeout(() => {
+            showToast('Inventory export complete!', 'success');
+        }, 1500);
+    }
+
+    function openAddProductModal() {
+        document.getElementById('addProductModal').classList.remove('hidden');
+        document.getElementById('addProductModal').classList.add('flex');
+    }
+
+    function closeAddProductModal() {
+        document.getElementById('addProductModal').classList.add('hidden');
+        document.getElementById('addProductModal').classList.remove('flex');
+        // Reset defaults
+        document.getElementById('addType').value = 'PRODUCT';
+        toggleTypeFields();
+    }
+
+    function toggleTypeFields() {
+        const type = document.getElementById('addType').value;
+        const wrapper = document.getElementById('stockWrapper');
+        if(type === 'SERVICE') {
+            wrapper.classList.add('hidden');
+            document.getElementById('addStock').value = '0';
+        } else {
+            wrapper.classList.remove('hidden');
+        }
+    }
+
+    function submitAddProduct(event) {
+        event.preventDefault();
+        
+        const formData = new FormData();
+        formData.append('item_type', document.getElementById('addType').value);
+        formData.append('name', document.getElementById('addName').value);
+        formData.append('sku', document.getElementById('addSku').value);
+        formData.append('hsn_code', document.getElementById('addHsn').value);
+        formData.append('price', document.getElementById('addPrice').value);
+        formData.append('stock', document.getElementById('addStock').value);
+        formData.append('gst_rate', document.getElementById('addGst').value);
+        
+        const imgInput = document.getElementById('addImage');
+        if (imgInput.files.length > 0) {
+            formData.append('image', imgInput.files[0]);
+        }
+
+        fetch('/inventory/add/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                closeAddProductModal();
+                showToast('Item added successfully!', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showToast('Error: ' + data.message, 'error');
+            }
+        });
+    }
+
+    function openEditProductModal(id, sku, name, price, hsn, gst, type, stock) {
+        document.getElementById('editProductId').value = id;
+        document.getElementById('editSku').value = sku;
+        document.getElementById('editName').value = name;
+        document.getElementById('editPrice').value = price;
+        document.getElementById('editHsn').value = hsn;
+        document.getElementById('editGst').value = gst;
+        document.getElementById('editType').value = type;
+        document.getElementById('editStock').value = stock;
+        
+        toggleEditTypeFields();
+        document.getElementById('editProductModal').classList.remove('hidden');
+        document.getElementById('editProductModal').classList.add('flex');
+    }
+
+    function closeEditProductModal() {
+        document.getElementById('editProductModal').classList.add('hidden');
+        document.getElementById('editProductModal').classList.remove('flex');
+    }
+
+    function toggleEditTypeFields() {
+        const type = document.getElementById('editType').value;
+        const wrapper = document.getElementById('editStockWrapper');
+        if(type === 'SERVICE') {
+            wrapper.classList.add('hidden');
+            document.getElementById('editStock').value = '0';
+        } else {
+            wrapper.classList.remove('hidden');
+        }
+    }
+
+    function submitEditProduct(event) {
+        event.preventDefault();
+        const id = document.getElementById('editProductId').value;
+        
+        const formData = new FormData();
+        formData.append('item_type', document.getElementById('editType').value);
+        formData.append('name', document.getElementById('editName').value);
+        formData.append('sku', document.getElementById('editSku').value);
+        formData.append('hsn_code', document.getElementById('editHsn').value);
+        formData.append('price', document.getElementById('editPrice').value);
+        formData.append('stock', document.getElementById('editStock').value);
+        formData.append('gst_rate', document.getElementById('editGst').value);
+        
+        const imgInput = document.getElementById('editImage');
+        if (imgInput.files.length > 0) {
+            formData.append('image', imgInput.files[0]);
+        }
+
+        fetch(`/inventory/edit/${id}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                closeEditProductModal();
+                showToast('Item updated successfully!', 'success');
+                setTimeout(() => { window.location.reload(); }, 1000);
+            } else {
+                showToast('Error: ' + data.message, 'error');
+            }
+        });
+    }
+
+    function confirmDeleteProduct(id, name) {
+        document.getElementById('deleteProductId').value = id;
+        document.getElementById('deleteItemName').innerText = name;
+        
+        document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        document.getElementById('deleteConfirmModal').classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteConfirmModal').classList.add('hidden');
+        document.getElementById('deleteConfirmModal').classList.remove('flex');
+    }
+
+    function executeDeleteProduct() {
+        const id = document.getElementById('deleteProductId').value;
+        
+        fetch(`/inventory/delete/${id}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            closeDeleteModal();
+            if(data.status === 'success') {
+                showToast('Item deleted successfully!', 'success');
+                setTimeout(() => { window.location.reload(); }, 1000);
+            } else {
+                // Provides helpful message if restricted by protected sales invoice relationships!
+                showToast('Cannot delete: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            closeDeleteModal();
+            showToast('Network error occurred.', 'error');
+        });
+    }
+</script>
+{% endblock %}

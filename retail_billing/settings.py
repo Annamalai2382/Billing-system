@@ -30,7 +30,10 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.loca.lt',
     'https://*.ngrok.io',
     'https://*.lhr.life',
-    'https://*.trycloudflare.com'
+    'https://*.trycloudflare.com',
+    'https://*.onrender.com',
+    'https://*.web.app',
+    'https://*.firebaseapp.com'
 ]
 
 

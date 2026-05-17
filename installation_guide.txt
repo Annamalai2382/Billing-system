@@ -142,6 +142,28 @@ C. AUTOMATED WHATSAPP DISPATCH
     and password, or simply shut down MySQL on port 3306 to force the 
     sqlite3 zero-config failback.
 
+------------------------------------------------------------------------
+8. PERMANENT DEPLOYMENT & GITHUB SYNC
+------------------------------------------------------------------------
+We have created an automated utility `push_and_deploy.bat` in the root of the 
+project. Simply double-click this file to launch the control hub!
+
+A. PUSH TO GITHUB:
+  * Creates a local, fully version-controlled initial git commit.
+  * Configures the remote origin pointer to your personal GitHub repository:
+    `https://github.com/Annamalai2382/Billing-system.git`
+  * Automatically pushes all local files to the `main` branch.
+  * Note: Ensure you have initialized a new empty repository named 
+    "Billing-system" on your GitHub profile (https://github.com/new) first.
+
+B. DEPLOY LIVE PERMANENTLY (FIREBASE CLOUD FUNCTIONS):
+  * The project features a fully serverless adapter configuration (`main.py`) 
+    that wraps Django inside Python 3.11 Cloud Functions for zero-downtime hosting.
+  * The helper compiles all production static bundles and runs `firebase deploy` 
+    to upload the app permanently.
+  * Once uploaded, the live project is accessible at your public URL:
+    `https://annamalai-a435c.web.app`
+
 ========================================================================
             Zenelait Infotech Engineering Team • 2026
 ========================================================================

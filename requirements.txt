@@ -10,3 +10,4 @@ tzdata==2026.2
 waitress==3.0.2
 firebase-functions
 functions-framework
+whitenoise==6.8.2

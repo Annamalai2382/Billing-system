@@ -157,12 +157,21 @@ A. PUSH TO GITHUB:
     "Billing-system" on your GitHub profile (https://github.com/new) first.
 
 B. DEPLOY LIVE PERMANENTLY (FIREBASE CLOUD FUNCTIONS):
-  * The project features a fully serverless adapter configuration (`main.py`) 
+  * The project features a serverless adapter configuration (`main.py`) 
     that wraps Django inside Python 3.11 Cloud Functions for zero-downtime hosting.
-  * The helper compiles all production static bundles and runs `firebase deploy` 
-    to upload the app permanently.
   * Once uploaded, the live project is accessible at your public URL:
-    `https://billing-system-d9295.web.app`
+    `https://billing-system-d9295.web.app` (Requires Firebase Blaze Plan).
+
+C. DEPLOY LIVE PERMANENTLY TO RENDER (100% FREE - NO CREDIT CARD):
+  * Render is a premium cloud platform that hosts dynamic Django apps 
+    permanently on a 100% Free plan with absolutely no credit card required.
+  * The repository features a pre-configured blueprints file (`render.yaml`) 
+    that automatically compiles packages and starts our optimized waitress server.
+  * Deployment is automatic: simply push your code to GitHub (Option 1), 
+    go to https://dashboard.render.com, log in using GitHub, create a 
+    "Web Service", and select the "Billing-system" repository.
+  * Your web app will launch live permanently under a custom domain like:
+    `https://billing-system-service.onrender.com`
 
 ========================================================================
             Zenelait Infotech Engineering Team • 2026

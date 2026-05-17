@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: billing-system-service
+    env: python
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+    startCommand: "python run_prod.py"
+    envVars:
+      - key: PORT
+        value: 10000

@@ -85,41 +85,107 @@ WSGI_APPLICATION = 'retail_billing.wsgi.application'
 
 # Smart Database Connection fallback
 import socket
+import os
 
-def _is_mysql_active():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(0.5) # Super fast check
+# 1. First, check if there is an environment variable configuration (Render Cloud environment)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+DB_NAME = os.environ.get('DB_NAME')
+DB_USER = os.environ.get('DB_USER')
+DB_PASSWORD = os.environ.get('DB_PASSWORD')
+DB_HOST = os.environ.get('DB_HOST')
+DB_PORT = os.environ.get('DB_PORT', '3306')
+
+db_configured = False
+
+if DATABASE_URL and DATABASE_URL.startswith('mysql://'):
     try:
-        s.connect(('localhost', 3306))
-        s.close()
-        return True
-    except Exception:
-        return False
+        # Parse mysql://user:password@host:port/dbname
+        url = DATABASE_URL[8:]
+        if '@' in url:
+            credentials, location = url.split('@', 1)
+            user, password = credentials.split(':', 1)
+            if '/' in location:
+                host_port, db_name = location.split('/', 1)
+                if '?' in db_name:
+                    db_name = db_name.split('?', 1)[0]
+                if ':' in host_port:
+                    host, port = host_port.split(':', 1)
+                else:
+                    host = host_port
+                    port = '3306'
+                
+                DATABASES = {
+                    'default': {
+                        'ENGINE': 'django.db.backends.mysql',
+                        'NAME': db_name,
+                        'USER': user,
+                        'PASSWORD': password,
+                        'HOST': host,
+                        'PORT': port,
+                        'OPTIONS': {
+                            'charset': 'utf8mb4',
+                            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                        },
+                    }
+                }
+                db_configured = True
+                print("[Database] Using production/cloud MySQL database parsed from DATABASE_URL.")
+    except Exception as e:
+        print(f"[Database Error] Failed to parse DATABASE_URL: {str(e)}")
 
-if _is_mysql_active():
+if not db_configured and DB_NAME and DB_USER and DB_PASSWORD and DB_HOST:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'retail_billing_db',
-            'USER': 'root',
-            'PASSWORD': 'root',
-            'HOST': 'localhost',
-            'PORT': '3306',
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
             'OPTIONS': {
                 'charset': 'utf8mb4',
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             },
         }
     }
-    print("[Database] Converted successfully to local MySQL server.")
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+    db_configured = True
+    print("[Database] Using production/cloud MySQL database from individual DB_* environment variables.")
+
+if not db_configured:
+    def _is_mysql_active():
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5) # Super fast check
+        try:
+            s.connect(('localhost', 3306))
+            s.close()
+            return True
+        except Exception:
+            return False
+
+    if _is_mysql_active():
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': 'retail_billing_db',
+                'USER': 'root',
+                'PASSWORD': 'root',
+                'HOST': 'localhost',
+                'PORT': '3306',
+                'OPTIONS': {
+                    'charset': 'utf8mb4',
+                    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                },
+            }
         }
-    }
-    print("[Database Warning] Local MySQL server at 3306 is unreachable. Falling back to local SQLite database for seamless operation.")
+        print("[Database] Converted successfully to local MySQL server.")
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+        print("[Database Warning] Local MySQL server at 3306 is unreachable. Falling back to local SQLite database for seamless operation.")
 
 
 # Password validation
